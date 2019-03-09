@@ -30,6 +30,18 @@ func copy(_ template: Foundation.URL, to folder: Foundation.URL) -> Foundation.U
   return destination
 }
 
+@discardableResult
+func openFile(_ url: Foundation.URL) -> Bool {
+  print("Opening...")
+  return NSWorkspace.shared.openFile(url.path)
+}
+
+/*
+  INPUT
+  - target folder
+  - template
+ */
+
 public struct CopyTemplate: Command {
   public let command = "copy"
   public let overview = "Copy <input> template to today folder."
@@ -54,50 +66,55 @@ public struct CopyTemplate: Command {
     let destination = copy(selectedTemplate, to: folder)
     
     // open
-    print("Opening...")
-    NSWorkspace.shared.openFile(destination.path)
+    openFile(destination)
   }
 }
+
+/*
+  INPUT
+  - target folder
+  - template folder
+ */
 
 public struct SelectTemplate: Command {
   public let command = "select"
   public let overview = "Select template from default folder."
   let folder = URL(fileURLWithPath: "/Users/marcomeschini/Development/Playground")
+  let templatesFolder = URL(fileURLWithPath: "/Users/marcomeschini/Development/Playground/.templates")
   
   public init(parser: ArgumentParser) {
     parser.add(subparser: command, overview: overview)
   }
   
   public func run(with arguments: ArgumentParser.Result) throws {
-    let templatesFolderName = ".templates"
-    let templatesFolder = folder.appendingPathComponent(templatesFolderName)
+    let playgroundExtension = "playground"
     let fileManager = FileManager.default
     let contents = try! fileManager.contentsOfDirectory(atPath: templatesFolder.path)
-      .filter { $0.hasSuffix(".playground") }
+      .filter { $0.hasSuffix(playgroundExtension) }
       .sorted(by: { (lhs, rhs) -> Bool in
         let lhsURL = URL(fileURLWithPath: lhs)
         let rhsURL = URL(fileURLWithPath: rhs)
         return lhsURL.lastPathComponent > rhsURL.lastPathComponent
       })
     for (index, element) in contents.enumerated() {
-      let prettyName = element.replacingOccurrences(of: ".playground", with: "")
+      let prettyName = element.replacingOccurrences(of: ".\(playgroundExtension)", with: "")
       print("[\(index)]: \(prettyName)")
     }
     var userSelection: Int? = nil
     while userSelection == nil {
-      print("Please make your selection:")
+      print("Please select the template:")
       let inputString = getInput()
       if let value = Int(inputString), contents.indices.contains(value) {
         userSelection = value
+      } else {
+        print("Selection not valid! Choose number between: 0 and \(contents.count).")
       }
     }
     let element = contents[userSelection!]
     let selectedTemplate = templatesFolder.appendingPathComponent(element)
     let destination = copy(selectedTemplate, to: folder)
     
-    // open
-    print("Opening...")
-    NSWorkspace.shared.openFile(destination.path)
+    openFile(destination)
   }
   
   func getInput() -> String {
