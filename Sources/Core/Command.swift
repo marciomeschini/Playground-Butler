@@ -7,7 +7,7 @@ public protocol Command {
   var overview: String { get }
   
   init(parser: ArgumentParser)
-  func run(with arguments: ArgumentParser.Result) throws
+  func run(with arguments: ArgumentParser.Result, configuration: Configuration) throws
 }
 
 public struct CommandRegistry {
@@ -47,6 +47,22 @@ public struct CommandRegistry {
         parser.printUsage(on: stdoutStream)
         return
     }
-    try command.run(with: arguments)
+    let configuration = Configuration.default // remove hardcoded values
+    try command.run(with: arguments, configuration: configuration)
   }
 }
+
+public struct Configuration: Codable {
+  let target: Foundation.URL
+  let templates: Foundation.URL
+  let pathExtension: String
+}
+
+extension Configuration {
+  static var `default` = Configuration(
+    target: URL(fileURLWithPath: "/Users/marcomeschini/Development/Playgrounds"),
+    templates: URL(fileURLWithPath: "/Users/marcomeschini/Development/Playgrounds/.templates"),
+    pathExtension: "playground"
+  )
+}
+
