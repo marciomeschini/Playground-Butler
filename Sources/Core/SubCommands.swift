@@ -45,10 +45,17 @@ public struct CopyTemplateCommand: Command {
 
 public struct SelectTemplateCommand: Command {
   public let command = "select"
-  public let overview = "Select from template list."
+  public let overview = "Select from template list or from provided index."
+  let index: PositionalArgument<Int>
   
   public init(parser: ArgumentParser) {
-    parser.add(subparser: command, overview: overview)
+    let subparser = parser.add(subparser: command, overview: overview)
+    index = subparser.add(
+      positional: "index",
+      kind: Int.self,
+      optional: true,
+      usage: "The index of the template. [optional]"
+    )
   }
   
   public func run(with arguments: ArgumentParser.Result, configuration: Configuration) throws {
@@ -56,14 +63,25 @@ public struct SelectTemplateCommand: Command {
     let all = Template.contentsOfDirectory(configuration.templates, ofType: pathExtension)
     let menuItems: [String] = all.enumerated()
       .map { "[\($0)]: \($1.prettyDescription)" }
+    
+    // user provided index
+    if let index = arguments.get(index) {
+      guard all.indices.contains(index) else {
+        print("Index not valid! Choose number between 0 and \(all.count).")
+        return
+      }
+      copyAndOpen(CopyTemplate(template: all[index]), configuration: configuration)
+      return
+    }
+    
+    //
     print(menuItems.joined(separator: "\n"))
-
     var selected: Int? = nil
     while selected == nil {
       print("Please select the template:")
       let inputString = getInput()
-      if let value = Int(inputString), all.indices.contains(value) {
-        selected = value
+      if let index = Int(inputString), all.indices.contains(index) {
+        selected = index
       } else {
         print("Selection not valid! Choose number between 0 and \(all.count).")
       }
