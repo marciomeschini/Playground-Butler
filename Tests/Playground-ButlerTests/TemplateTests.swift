@@ -1,10 +1,3 @@
-//
-//  TemplateTests.swift
-//  Playground-ButlerTests
-//
-//  Created by Marco Meschini on 09/03/2019.
-//
-
 import XCTest
 @testable import Core
 
@@ -55,6 +48,18 @@ class TemplateTests: XCTestCase {
     XCTAssertFalse(copy.createIntermediateDirectory(to: testBundle.bundleURL))
   }
   
+  func test_contentsOfDirectory_return_templates() {
+    let contents = Template.contentsOfDirectory(templatePath.deletingLastPathComponent(), ofType: "playground")
+    XCTAssertEqual(contents.count, 1)
+  }
+  
+  func test_contentsOfDirectory_return_empty() {
+    removeTemplate()
+    let testBundle = Bundle(for: type(of: self))
+    let contents = Template.contentsOfDirectory(testBundle.bundleURL, ofType: "playground")
+    XCTAssertEqual(contents.count, 0)
+  }
+  
   private var templatePath: URL {
     let testBundle = Bundle(for: type(of: self))
     let url = testBundle.bundleURL.appendingPathComponent("Template.playground")
@@ -68,6 +73,6 @@ class TemplateTests: XCTestCase {
   private func removeTemplate() {
     let testBundle = Bundle(for: type(of: self))
     let url = testBundle.bundleURL.appendingPathComponent("Template.playground")
-    try! FileManager.default.removeItem(at: url)
+    try? FileManager.default.removeItem(at: url)
   }
 }

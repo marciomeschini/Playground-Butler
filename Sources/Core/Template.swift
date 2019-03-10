@@ -1,16 +1,9 @@
-//
-//  Template.swift
-//  Core
-//
-//  Created by Marco Meschini on 09/03/2019.
-//
-
 import Foundation
 
 // MARK: -
 
 struct Template {
-  public let url: URL
+  let url: URL
 }
 
 // MARK: -
@@ -19,8 +12,10 @@ extension Template {
   init(_ path: String) {
     self.init(url: URL(fileURLWithPath: path))
   }
-  
-  var prettyDescription: String {
+}
+
+extension Template: CustomStringConvertible {
+  var description: String {
     return url.deletingPathExtension().lastPathComponent
   }
 }
@@ -30,14 +25,14 @@ extension Template {
 extension Template {
   static func contentsOfDirectory(_ url: URL, ofType suffix: String) -> [Template] {
     let fileManager = FileManager.default
-    let contents = try! fileManager.contentsOfDirectory(atPath: url.path)
+    let contents = try? fileManager.contentsOfDirectory(atPath: url.path)
       .filter { $0.hasSuffix(suffix) }
       .sorted(by: { (lhs, rhs) -> Bool in
         let lhsURL = URL(fileURLWithPath: lhs)
         let rhsURL = URL(fileURLWithPath: rhs)
         return lhsURL.lastPathComponent > rhsURL.lastPathComponent
       })
-    return contents
+    return (contents ?? [])
       .map { url.appendingPathComponent($0) }
       .map(Template.init)
   }
@@ -46,8 +41,8 @@ extension Template {
 // MARK: -
 
 struct CopyTemplate {
-  public let template: Template
-  public let dateFormat = "yyyyMMdd"
+  let template: Template
+  let dateFormat = "yyyyMMdd"
   let fileManager = FileManager.default
   
   var intermediateDirectoryName: String {

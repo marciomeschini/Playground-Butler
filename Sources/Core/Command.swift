@@ -2,12 +2,14 @@ import Utility
 import Basic
 import Foundation
 
+// https://www.enekoalonso.com/articles/handling-commands-with-swift-package-manager
+
 public protocol Command {
   var command: String { get }
   var overview: String { get }
   
   init(parser: ArgumentParser)
-  func run(with arguments: ArgumentParser.Result, configuration: Configuration) throws
+  func run(with arguments: ArgumentParser.Result) throws
 }
 
 public struct CommandRegistry {
@@ -47,22 +49,7 @@ public struct CommandRegistry {
         parser.printUsage(on: stdoutStream)
         return
     }
-    let configuration = Configuration.default // remove hardcoded values
-    try command.run(with: arguments, configuration: configuration)
+    try command.run(with: arguments)
   }
-}
-
-public struct Configuration: Codable {
-  let target: Foundation.URL
-  let templates: Foundation.URL
-  let pathExtension: String
-}
-
-extension Configuration {
-  static var `default` = Configuration(
-    target: URL(fileURLWithPath: "/Users/marcomeschini/Development/Playgrounds"),
-    templates: URL(fileURLWithPath: "/Users/marcomeschini/Development/Playgrounds/.templates"),
-    pathExtension: "playground"
-  )
 }
 

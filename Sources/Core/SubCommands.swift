@@ -17,6 +17,20 @@ extension Command {
   }
 }
 
+// MARK: -
+
+enum CommandError: Error {
+  case templatesNotFound(Foundation.URL)
+}
+
+extension CommandError: LocalizedError {
+  public var errorDescription: String? {
+    switch self {
+    case let .templatesNotFound(url):
+      return NSLocalizedString("Templates not found. Please add some templates to \(url)", comment: "")
+    }
+  }
+}
 
 // MARK: -
 
@@ -35,8 +49,9 @@ public struct CopyTemplateCommand: Command {
     )
   }
   
-  public func run(with arguments: ArgumentParser.Result, configuration: Configuration) throws {
+  public func run(with arguments: ArgumentParser.Result) throws {
     guard let source = arguments.get(source) else { return }
+    let configuration = try Store.default.configuration()
     copyAndOpen(CopyTemplate(source), configuration: configuration)
   }
 }
@@ -58,12 +73,13 @@ public struct SelectTemplateCommand: Command {
     )
   }
   
-  public func run(with arguments: ArgumentParser.Result, configuration: Configuration) throws {
+  public func run(with arguments: ArgumentParser.Result) throws {
+    let configuration = try Store.default.configuration()
     let pathExtension = configuration.pathExtension
     let all = Template.contentsOfDirectory(configuration.templates, ofType: pathExtension)
-    let menuItems: [String] = all.enumerated()
-      .map { "[\($0)]: \($1.prettyDescription)" }
-    
+    guard all.count > 0 else {
+      throw CommandError.templatesNotFound(configuration.templates)
+    }
     // user provided index
     if let index = arguments.get(index) {
       guard all.indices.contains(index) else {
@@ -73,8 +89,8 @@ public struct SelectTemplateCommand: Command {
       copyAndOpen(CopyTemplate(template: all[index]), configuration: configuration)
       return
     }
-    
-    //
+    // interactive
+    let menuItems = all.enumerated().map { "[\($0)]: \($1)" }
     print(menuItems.joined(separator: "\n"))
     var selected: Int? = nil
     while selected == nil {
@@ -93,5 +109,57 @@ public struct SelectTemplateCommand: Command {
     let inputData = FileHandle.standardInput.availableData
     let inputString = String(bytes: inputData, encoding: .utf8)!
     return inputString.trimmingCharacters(in: .whitespacesAndNewlines)
+  }
+}
+
+// MARK: -
+
+public struct EditConfigurationCommand: Command {
+  public let command = "configure"
+  public let overview = "Set new configuration."
+  let target: PositionalArgument<PathArgument>
+  let templates: PositionalArgument<PathArgument>
+  
+  public init(parser: ArgumentParser) {
+    let subparser = parser.add(subparser: command, overview: overview)
+    target = subparser.add(
+      positional: "target",
+      kind: PathArgument.self,
+      optional: false,
+      usage: "The folder to store the playgrounds."
+    )
+    templates = subparser.add(
+      positional: "templates",
+      kind: PathArgument.self,
+      optional: false,
+      usage: "The folder to store the templates."
+    )
+  }
+  
+  public func run(with arguments: ArgumentParser.Result) throws {
+    // positional + path types§
+    let newTarget = arguments.get(target)?.path.asString ?? ""
+    let newTemplates = arguments.get(templates)?.path.asString ?? ""
+    let configuration = Configuration(
+      target: URL(fileURLWithPath: newTarget),
+      templates: URL(fileURLWithPath: newTemplates),
+      pathExtension: "playground"
+    )
+    try Store.default.save(configuration)
+  }
+}
+
+// MARK: -
+
+public struct ViewConfigurationCommand: Command {
+  public let command = "view"
+  public let overview = "Show current configuration."
+  
+  public init(parser: ArgumentParser) {
+    parser.add(subparser: command, overview: overview)
+  }
+  
+  public func run(with arguments: ArgumentParser.Result) throws {
+    print(try Store.default.configuration())
   }
 }

@@ -1,8 +1,10 @@
 import Core
 
-var registry = CommandRegistry(usage: "<command> <options>", overview: "Playground Butler makes playground creation fast and not boring.")
+var registry = CommandRegistry(usage: "<command> <options>", overview: "Playground Butler makes playgrounds creation fast and not boring.")
 registry.register(command: CopyTemplateCommand.self)
 registry.register(command: SelectTemplateCommand.self)
+registry.register(command: EditConfigurationCommand.self)
+registry.register(command: ViewConfigurationCommand.self)
 registry.run()
 
 
