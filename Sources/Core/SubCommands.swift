@@ -163,3 +163,19 @@ public struct ViewConfigurationCommand: Command {
     print(try Store.default.configuration())
   }
 }
+
+// MARK: -
+
+public struct VersionCommand: Command {
+  public let command = "version"
+  public let overview = "Show current version."
+  public static var version: String = ""
+  
+  public init(parser: ArgumentParser) {
+    parser.add(subparser: command, overview: overview)
+  }
+  
+  public func run(with arguments: ArgumentParser.Result) throws {
+    print(VersionCommand.version)
+  }
+}
