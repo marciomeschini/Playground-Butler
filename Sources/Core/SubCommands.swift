@@ -58,6 +58,45 @@ public struct CopyTemplateCommand: Command {
 
 // MARK: -
 
+public struct LastOpenedCommand: Command {
+  public let command = "last"
+  public let overview = "Open most recent playground."
+  
+  public init(parser: ArgumentParser) {
+    parser.add(subparser: command, overview: overview)
+  }
+  
+  public func run(with arguments: ArgumentParser.Result) throws {
+    let configuration = try Store.default.configuration()
+    let url = configuration.target
+    let searchTerm = ".\(configuration.pathExtension)"
+    
+    if let enumerator = FileManager.default.enumerator(atPath: url.path) {
+      var items = [String]()
+      for case let path as String in enumerator {
+        if path.hasPrefix(".") || path.contains(searchTerm) {
+          enumerator.skipDescendants()
+        }
+        guard path.contains(searchTerm) else {
+          continue
+        }
+        items.append(path)
+      }
+      let itemsPath = items.map { url.appendingPathComponent($0) }
+      let itemsDate: [Date] = itemsPath.map {
+        let attributes = try! FileManager.default.attributesOfItem(atPath: $0.path)
+        return attributes[.modificationDate] as! Date
+      }
+      let tuples = zip(itemsPath, itemsDate)
+      let sorted = tuples.sorted { $0.1 > $1.1 }
+      print(sorted.first!)
+      openFile(sorted.first!.0)
+    }
+  }
+}
+
+// MARK: -
+
 public struct SelectTemplateCommand: Command {
   public let command = "select"
   public let overview = "Select from template list or from provided index."
